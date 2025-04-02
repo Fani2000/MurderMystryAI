@@ -1,19 +1,12 @@
 ﻿using Backend.Models;
 using Azure.AI.OpenAI;
-using Backend.Validators;
+using Backend.Configuration;
 using OpenAI.Chat;
 
 namespace Backend.GraphQL.Mutations;
 
-public class Mutation
+public class Mutation(AzureAIOptions azureAiOptions)
 {
-    private readonly KeyVaultService _keyVaultService;
-
-    public Mutation(KeyVaultService keyVaultService)
-    {
-        _keyVaultService = keyVaultService;
-    }
-
     public async Task<StoryResult> GenerateMurderMysteryAsync(List<UserInput> users)
     {
         if (users == null || users.Count < 2)
@@ -30,14 +23,9 @@ public class Mutation
         var storyPrompt =
             $"Create a murder mystery involving these participants: {userNames}. Randomly assign one as the killer and make it suspenseful.";
 
-        // Retrieve secrets from KeyVaultService
-        var endpoint = await _keyVaultService.GetSecretAsync("AzureEndpoint");
-        var apiKey = await _keyVaultService.GetSecretAsync("AzureApiKey");
-        var model = await _keyVaultService.GetSecretAsync("AzureModel");
-
-        // Set up Azure OpenAI client
-        AzureOpenAIClient openAIClient = new(new Uri(endpoint), new Azure.AzureKeyCredential(apiKey));
-        ChatClient chatClient = openAIClient.GetChatClient(model);
+        // Set up Azure OpenAI client using AzureAIOptions
+        AzureOpenAIClient openAIClient = new(new Uri(azureAiOptions.Endpoint), new Azure.AzureKeyCredential(azureAiOptions.ApiKey));
+        ChatClient chatClient = openAIClient.GetChatClient(azureAiOptions.Model);
 
         // Generate the murder mystery story
         string fullStory;
@@ -69,7 +57,7 @@ public class Mutation
         {
             FullStory = fullStory,
             Killer = killer,
-            UserStories = userStories
+            UserStories = userStories!
         };
     }
 }
