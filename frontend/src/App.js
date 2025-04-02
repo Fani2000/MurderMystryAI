@@ -8,6 +8,7 @@ import {
   List,
   ListItem,
   Paper,
+  Divider,
 } from '@mui/material';
 import client from './apollo-client';
 
@@ -17,8 +18,10 @@ const GENERATE_MURDER_MYSTERY = gql`
     generateMurderMystery(users: $users) {
       fullStory
       killer
+      detective
+      detectiveClues
       userStories {
-        key,
+        key
         value
       }
     }
@@ -61,24 +64,24 @@ function App() {
         Murder Mystery Generator
       </Typography>
 
-      {/* Main Container for Input and Results (Flex Row) */}
+      {/* Input and Story Output Section */}
       <Box
         sx={{
-          display: 'flex',            // Enables Flexbox
-          flexDirection: 'row',       // Displays input and results in a row
-          alignItems: 'flex-start',   // Aligns items at the top
-          justifyContent: 'space-between', // Adds space between the two sections
-          gap: 4,                     // Adds spacing between sections
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 4,
           marginTop: 4,
         }}
       >
-        {/* Left Column: Add Participants and List */}
+        {/* Left Column: Add Participants */}
         <Box
           sx={{
-            flex: 1,                 // Takes 1 fraction of space in the row
+            flex: 1,
             display: 'flex',
-            flexDirection: 'column', // Stacks content vertically in the left column
-            gap: 2,                  // Adds spacing between items
+            flexDirection: 'column',
+            gap: 2,
           }}
         >
           {/* Add Participants Section */}
@@ -86,54 +89,36 @@ function App() {
             <Typography variant="h6" gutterBottom>
               Add Participants
             </Typography>
-
             <Box
               sx={{
-                display: 'flex',       // Enables Flexbox
-                flexDirection: 'row',  // Arranges input and button in a row
-                alignItems: 'center',  // Centers items vertically
-                gap: 2,                // Adds spacing between input and button
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 2,
               }}
             >
               <TextField
                 label="Participant Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                onKeyDown={(e) =>
-                  e.key === 'Enter' ? handleAddParticipant() : null
-                }
+                onKeyDown={(e) => (e.key === 'Enter' ? handleAddParticipant() : null)}
               />
-
-              <Button
-                variant="contained"
-                onClick={handleAddParticipant}
-              >
+              <Button variant="contained" onClick={handleAddParticipant}>
                 Add
               </Button>
             </Box>
           </Box>
 
-          {/* Participant List (Flex Row) */}
-          <List
-            sx={{
-              display: 'flex',       // Enables Flexbox
-              flexDirection: 'row',  // Makes items appear side by side
-              flexWrap: 'wrap',      // Wraps to a new line if items overflow
-              gap: 2,                // Adds spacing between items
-              marginTop: 2,
-            }}
-          >
+          {/* Participant List */}
+          <List sx={{ marginTop: 2 }}>
             {participants.map((participant, index) => (
               <ListItem
                 key={index}
                 sx={{
-                  display: 'flex',            // Ensures item is flex-aware
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: '1px solid #ddd',   // Adds a border
                   padding: 1,
+                  backgroundColor: '#f5f5f5',
+                  marginBottom: 1,
                   borderRadius: 1,
-                  width: 'auto',              // Adjusts dynamically to content
                 }}
               >
                 {participant.name}
@@ -145,62 +130,86 @@ function App() {
           <Button
             variant="contained"
             color="primary"
-            sx={{ marginTop: 2 }}
             onClick={handleGenerate}
-            disabled={participants.length < 2 || loading}
+            disabled={loading || participants.length < 3}
           >
-            Generate Mystery
+            {loading ? 'Generating Mystery...' : 'Generate Mystery'}
           </Button>
 
-          {/* Error Message */}
-          {error && <Typography color="error">{error.message}</Typography>}
+          {error && (
+            <Typography color="error" sx={{ marginTop: 2 }}>
+              Error generating mystery. Please try again.
+            </Typography>
+          )}
         </Box>
 
-        {/* Right Column: Generated Results */}
+        {/* Right Column: Generated Story */}
         {generatedStory && (
-          <Box
-            sx={{
-              flex: 2,                 // Takes 2 fractions of space in the row
-              display: 'flex',
-              flexDirection: 'column', // Stacks content vertically
-              gap: 2,                  // Adds spacing between sections
-            }}
-          >
-            {/* Generated Story */}
-            <Paper sx={{ padding: 2 }}>
-              <Typography variant="h5" gutterBottom>
-                Story Result
+          <Box sx={{ flex: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Murder Mystery Story
+            </Typography>
+            <Paper sx={{ padding: 2, marginBottom: 2 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                <strong>Full Story:</strong>
               </Typography>
-              <Box sx={{ marginBottom: 2 }}>
-                <Typography variant="body1">
-                  <strong>Full Story:</strong> {generatedStory.fullStory}
-                </Typography>
-              </Box>
-              <Typography variant="h6">
-                Killer: {generatedStory.killer}
-              </Typography>
+              <Typography>{generatedStory.fullStory}</Typography>
             </Paper>
 
-            {/* User Stories */}
-            <Box>
-              <Typography variant="h6" gutterBottom>
-                User Stories
-              </Typography>
-              {generatedStory.userStories.map((story) => (
+            <Divider sx={{ marginY: 2 }} />
+
+            <Typography variant="subtitle1" gutterBottom>
+              <strong>Killer:</strong> {generatedStory.killer}
+            </Typography>
+            <Typography variant="subtitle1" gutterBottom>
+              <strong>Detective:</strong> {generatedStory.detective}
+            </Typography>
+
+            {generatedStory.detectiveClues && (
+              <Box
+                sx={{
+                  marginTop: 2,
+                  padding: 2,
+                  backgroundColor: '#e0f7fa',
+                  borderRadius: 1,
+                }}
+              >
+                <Typography variant="subtitle1" gutterBottom>
+                  <strong>Detective Clues:</strong>
+                </Typography>
+                <ul>
+                  {generatedStory.detectiveClues.map((clue, index) => (
+                    <li key={index}>
+                      <Typography>{clue}</Typography>
+                    </li>
+                  ))}
+                </ul>
+              </Box>
+            )}
+
+            <Divider sx={{ marginY: 2 }} />
+
+            {/* User-Specific Stories */}
+            <Typography variant="subtitle1" gutterBottom>
+              <strong>User Stories:</strong>
+            </Typography>
+            {generatedStory.userStories?.map((x,y) => (
                 <Paper
-                  key={story.key}
+                  key={y}
                   sx={{
-                    padding: 1,
-                    backgroundColor: '#f1f1f1',
-                    marginBottom: 1,
+                    padding: 2,
+                    backgroundColor: '#f9fbe7',
+                    marginBottom: 2,
+                    borderRadius: 1,
                   }}
                 >
-                  <Typography variant="body2">
-                    <strong>{story.key}:</strong> {story.value}
+                  <Typography variant="subtitle2">
+                    <strong>{x.key}'s Story:</strong>
                   </Typography>
+                  <Typography>{x.value}</Typography>
                 </Paper>
-              ))}
-            </Box>
+              )
+            )}
           </Box>
         )}
       </Box>
